@@ -9,10 +9,10 @@
 
 # This module implements Posix and Windows select().
 
-import times, nativesockets
+import std/[times, nativesockets]
 
 when defined(windows):
-  import winlean
+  import std/winlean
   when defined(gcc):
     {.passl: "-lws2_32".}
   elif defined(vcc):
@@ -313,8 +313,8 @@ proc selectInto*[T](s: Selector[T], timeout: int,
   verifySelectParams(timeout)
 
   if timeout != -1:
-    when defined(genode) or defined(freertos) or defined(zephyr):
-      tv.tv_sec = Time(timeout div 1_000)
+    when defined(genode) or defined(freertos) or defined(zephyr) or defined(nuttx):
+      tv.tv_sec = posix.Time(timeout div 1_000)
     else:
       tv.tv_sec = timeout.int32 div 1_000
     tv.tv_usec = (timeout.int32 %% 1_000) * 1_000
@@ -397,18 +397,6 @@ proc contains*[T](s: Selector[T], fd: SocketHandle|int): bool {.inline.} =
     for i in 0..<FD_SETSIZE:
       if s.fds[i].ident == fdi:
         return true
-
-when hasThreadSupport:
-  template withSelectLock[T](s: Selector[T], body: untyped) =
-    acquire(s.lock)
-    {.locks: [s.lock].}:
-      try:
-        body
-      finally:
-        release(s.lock)
-else:
-  template withSelectLock[T](s: Selector[T], body: untyped) =
-    body
 
 proc getData*[T](s: Selector[T], fd: SocketHandle|int): var T =
   s.withSelectLock():

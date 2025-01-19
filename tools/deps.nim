@@ -1,5 +1,8 @@
-import os, uri, strformat, strutils
+import std/[os, uri, strformat, strutils]
 import std/private/gitutils
+
+when defined(nimPreviewSlimSystem):
+  import std/assertions
 
 proc exec(cmd: string) =
   echo "deps.cmd: " & cmd
@@ -39,3 +42,16 @@ proc cloneDependency*(destDirBase: string, url: string, commit = commitHead,
     discard "this dependency was bundled with Nim, don't do anything"
   else:
     quit "FAILURE: " & destdir & " already exists but is not a git repo"
+
+proc updateSubmodules*(dir: string, allowBundled = false) =
+  if isGitRepo(dir):
+    let oldDir = getCurrentDir()
+    setCurrentDir(dir)
+    try:
+      exec "git submodule update --init"
+    finally:
+      setCurrentDir(oldDir)
+  elif allowBundled:
+    discard "this dependency was bundled with Nim, don't do anything"
+  else:
+    quit "FAILURE: " & dir & " already exists but is not a git repo"
