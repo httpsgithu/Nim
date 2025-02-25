@@ -1,7 +1,8 @@
 ﻿discard """
+  matrix: "--mm:refc; --mm:orc"
   targets: "c js"
 """
-
+import std/assertions
 import std/base64
 
 template main() =
@@ -16,6 +17,8 @@ template main() =
 
   doAssert encode("") == ""
   doAssert decode("") == ""
+
+  doAssert decode(" ") == ""
 
   const testInputExpandsTo76 = "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   const testInputExpands = "++++++++++++++++++++++++++++++"
@@ -52,5 +55,9 @@ template main() =
     doAssert encode("", safe = true) == ""
     doAssert encode("the quick brown dog jumps over the lazy fox", safe = true) == "dGhlIHF1aWNrIGJyb3duIGRvZyBqdW1wcyBvdmVyIHRoZSBsYXp5IGZveA=="
 
+func mainNoSideEffects() = main()
+
 static: main()
 main()
+static: mainNoSideEffects()
+mainNoSideEffects()
